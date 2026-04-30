@@ -108,30 +108,9 @@ defmodule PgSASLprep.IntegrationTest do
   #   ClientKey      = HMAC-SHA256(SaltedPassword, "Client Key")
   #   StoredKey      = SHA256(ClientKey)
   defp compute_stored_key(password, salt, iters) do
-    salted = pbkdf2_sha256(password, salt, iters, 32)
+    salted = :crypto.pbkdf2_hmac(:sha256, password, salt, iters, 32)
     client_key = :crypto.mac(:hmac, :sha256, salted, "Client Key")
     :crypto.hash(:sha256, client_key)
-  end
-
-  defp pbkdf2_sha256(password, salt, iters, dklen) do
-    blocks_needed = div(dklen + 31, 32)
-
-    1..blocks_needed
-    |> Enum.map(&pbkdf2_block(password, salt, iters, &1))
-    |> IO.iodata_to_binary()
-    |> binary_part(0, dklen)
-  end
-
-  defp pbkdf2_block(password, salt, iters, index) do
-    initial = :crypto.mac(:hmac, :sha256, password, salt <> <<index::32>>)
-    pbkdf2_iterate(password, iters - 1, initial, initial)
-  end
-
-  defp pbkdf2_iterate(_password, 0, _prev, acc), do: acc
-
-  defp pbkdf2_iterate(password, n, prev, acc) do
-    next = :crypto.mac(:hmac, :sha256, password, prev)
-    pbkdf2_iterate(password, n - 1, next, :crypto.exor(next, acc))
   end
 
   defp parse_url(url) do

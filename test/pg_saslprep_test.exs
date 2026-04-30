@@ -77,10 +77,9 @@ defmodule PgSASLprepTest do
 
     test "RandALCat must bracket the string (first and last)" do
       # U+0627 + ASCII space + U+0628: space is neither RandALCat nor LCat,
-      # so this hinges only on first/last being RandALCat — passes.
+      # so the only bidi check that matters is first/last — both RandALCat,
+      # so it's allowed.
       input = <<0xD8, 0xA7>> <> " " <> <<0xD8, 0xA8>>
-      # But ASCII space becomes prohibited (U+0020 is fine, not in prohibited
-      # ranges). Result depends on bidi: first and last are RandALCat. Allowed.
       assert PgSASLprep.saslprep(input) == {:ok, input}
     end
 
