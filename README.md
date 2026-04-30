@@ -4,16 +4,6 @@ Elixir port of PostgreSQL's
 [`pg_saslprep()`](https://github.com/postgres/postgres/blob/master/src/common/saslprep.c)
 (RFC 4013 SASLprep).
 
-## Installation
-
-```elixir
-def deps do
-  [
-    {:pg_saslprep, "~> 0.1.0"}
-  ]
-end
-```
-
 ## Usage
 
 ```elixir
@@ -52,7 +42,7 @@ The output matches `pg_saslprep`, not RFC 3454 to the letter:
 
 NFKC is delegated to `String.normalize/2`. The library only ships the six
 SASLprep range tables from `saslprep.c:62-960`. Range membership is compiled
-to BEAM guard chains at compile time. No NIFs, no runtime dependencies.
+to BEAM guard chains at compile time.
 
 ## Tests
 
@@ -81,4 +71,4 @@ DATABASE_URL=postgres://postgres:postgres@localhost:54329/postgres \
 
 ## License
 
-PostgreSQL License, matching upstream.
+PostgreSQL License.
