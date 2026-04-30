@@ -1,8 +1,15 @@
+# Ported from PostgreSQL's src/common/saslprep.c.
+# Portions Copyright (c) 1996-2026, PostgreSQL Global Development Group
+# Portions Copyright (c) 1994, The Regents of the University of California
+# Released under the PostgreSQL License (see LICENSE).
+
 defmodule PgSASLprep.Tables do
   @moduledoc false
 
   # Stringprep range tables ported verbatim from PostgreSQL
   # src/common/saslprep.c. Each entry is {lo, hi} inclusive.
+  # Synced from postgres commit 3d10ece612f535be15a9cb7ca31620c80db6f0e9.
+  # The A.1 unassigned-codepoint table is frozen at Unicode 3.2 per RFC 4013.
 
   # C.1.2 Non-ASCII space characters (mapped to U+0020).
   @non_ascii_space_ranges [

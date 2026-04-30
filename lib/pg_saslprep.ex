@@ -1,3 +1,8 @@
+# Ported from PostgreSQL's src/common/saslprep.c.
+# Portions Copyright (c) 1996-2026, PostgreSQL Global Development Group
+# Portions Copyright (c) 1994, The Regents of the University of California
+# Released under the PostgreSQL License (see LICENSE).
+
 defmodule PgSASLprep do
   @moduledoc """
   RFC 4013 SASLprep, port of PostgreSQL's `pg_saslprep()`
