@@ -80,8 +80,12 @@ defmodule PgSASLprep do
   """
   @spec saslprep(binary()) :: {:ok, binary()} | {:error, error()}
   def saslprep(input) when is_binary(input) do
-    if String.valid?(input) do
-      do_saslprep(input)
+    # `pg_saslprep` takes `const char *`, so postgres only sees the
+    # bytes up to the first NUL. Match that before validating UTF-8.
+    [truncated | _] = :binary.split(input, <<0>>)
+
+    if String.valid?(truncated) do
+      do_saslprep(truncated)
     else
       {:error, :invalid_utf8}
     end

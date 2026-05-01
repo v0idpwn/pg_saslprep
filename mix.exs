@@ -25,7 +25,8 @@ defmodule PgSASLprep.MixProject do
   defp deps do
     [
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
-      {:postgrex, "~> 0.17", only: :test}
+      {:postgrex, "~> 0.17", only: :test},
+      {:stream_data, "~> 1.1", only: :test}
     ]
   end
 

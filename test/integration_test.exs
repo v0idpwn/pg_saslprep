@@ -115,14 +115,14 @@ defmodule PgSASLprep.IntegrationTest do
 
   defp parse_url(url) do
     %URI{userinfo: userinfo, host: host, port: port, path: "/" <> database} = URI.parse(url)
-    [username, password] = String.split(userinfo, ":", parts: 2)
 
-    [
-      hostname: host,
-      port: port || 5432,
-      username: username,
-      password: password,
-      database: database
-    ]
+    {username, password} =
+      case String.split(userinfo || "postgres", ":", parts: 2) do
+        [u, p] -> {u, p}
+        [u] -> {u, nil}
+      end
+
+    [hostname: host, port: port || 5432, username: username, database: database]
+    |> then(&if(password, do: Keyword.put(&1, :password, password), else: &1))
   end
 end

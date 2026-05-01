@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit:
+    name: Unit tests (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - elixir: "1.18"
+            otp: "27"
+          - elixir: "1.16"
+            otp: "26"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+      - run: mix deps.get
+      - run: mix test
+
+  integration:
+    name: Integration (PG master @ test_saslprep)
+    runs-on: ubuntu-latest
+    env:
+      PG_PREFIX: ${{ github.workspace }}/pg-install
+      # SHA of postgres master pinned to the latest commit touching
+      # test_saslprep ("Fix issue with copy of input bytea"). The
+      # test_saslprep module only exists on master, so we build that
+      # exact tree — no grafting onto release tags.
+      PG_SHA: 5d35531af1840fdd8debfc1ff657643ddba029ab
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.18"
+          otp-version: "27"
+
+      - name: Cache postgres install
+        id: pg-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.PG_PREFIX }}
+          key: pg-${{ runner.os }}-${{ env.PG_SHA }}-v1
+
+      - name: Install build deps
+        if: steps.pg-cache.outputs.cache-hit != 'true'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends bison flex perl make gcc
+
+      - name: Build postgres + test_saslprep from source
+        if: steps.pg-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          git clone https://github.com/postgres/postgres.git "$RUNNER_TEMP/pgsrc"
+          cd "$RUNNER_TEMP/pgsrc"
+          git checkout "$PG_SHA"
+          ./configure --prefix="$PG_PREFIX" \
+            --without-icu --without-readline --without-zlib \
+            --without-llvm --without-libxml --without-libxslt \
+            --without-zstd --without-lz4 --disable-nls
+          make -j"$(nproc)"
+          make install
+          make -C src/test/modules/test_saslprep install
+
+      - name: Initialize and start postgres
+        run: |
+          set -euo pipefail
+          export PATH="$PG_PREFIX/bin:$PATH"
+          export PGDATA="$RUNNER_TEMP/pgdata"
+          rm -rf "$PGDATA"
+          initdb -D "$PGDATA" --auth-host=trust --auth-local=trust \
+            --username=postgres --no-locale --encoding=UTF8
+          pg_ctl -D "$PGDATA" -l "$PGDATA/pg.log" \
+            -o "-p 54330 -c listen_addresses=127.0.0.1" start
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ runner.os }}-integration-${{ hashFiles('mix.lock') }}
+
+      - run: mix deps.get
+      - name: Run integration + property tests
+        env:
+          DATABASE_URL: postgres://postgres@127.0.0.1:54330/postgres
+        run: mix test --include integration
+
+      - name: Show postgres log on failure
+        if: failure()
+        run: cat "$RUNNER_TEMP/pgdata/pg.log" || true
