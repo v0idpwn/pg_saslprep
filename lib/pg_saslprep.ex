@@ -78,11 +78,11 @@ defmodule PgSASLprep do
     * `:prohibited` — input contains a prohibited or unassigned codepoint,
       or violates the bidi rule
   """
-  @spec saslprep(binary()) :: {:ok, binary()} | {:error, error()}
-  def saslprep(input) when is_binary(input) do
+  @spec saslprep(iodata()) :: {:ok, binary()} | {:error, error()}
+  def saslprep(input) do
     # `pg_saslprep` takes `const char *`, so postgres only sees the
     # bytes up to the first NUL. Match that before validating UTF-8.
-    [truncated | _] = :binary.split(input, <<0>>)
+    [truncated | _] = :binary.split(IO.iodata_to_binary(input), <<0>>)
 
     if String.valid?(truncated) do
       do_saslprep(truncated)
@@ -97,11 +97,13 @@ defmodule PgSASLprep do
   Implements the RFC 5802 §5.1 fallback used by `pg_be_scram_build_secret`
   (`src/backend/libpq/auth-scram.c:494-496`).
   """
-  @spec scram_normalize(binary()) :: binary()
-  def scram_normalize(input) when is_binary(input) do
-    case saslprep(input) do
+  @spec scram_normalize(iodata()) :: binary()
+  def scram_normalize(input) do
+    binary = IO.iodata_to_binary(input)
+
+    case saslprep(binary) do
       {:ok, normalized} -> normalized
-      {:error, _} -> input
+      {:error, _} -> binary
     end
   end
 
