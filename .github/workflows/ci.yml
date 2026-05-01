@@ -9,26 +9,30 @@ jobs:
   unit:
     name: Unit tests (Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }})
     runs-on: ubuntu-latest
+    env:
+      PG_SASLPREP_BUILD: "1"
     strategy:
       fail-fast: false
       matrix:
         include:
           - elixir: "1.19"
             otp: "28"
-          - elixir: "1.16"
-            otp: "26"
+          - elixir: "1.18"
+            otp: "27"
     steps:
       - uses: actions/checkout@v4
       - uses: erlef/setup-beam@v1
         with:
           elixir-version: ${{ matrix.elixir }}
           otp-version: ${{ matrix.otp }}
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/cache@v4
         with:
           path: |
             deps
             _build
-          key: mix-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock') }}
+            native/pg_saslprep_nif/target
+          key: mix-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('mix.lock', 'native/pg_saslprep_nif/Cargo.toml') }}
       - run: mix deps.get
       - run: mix test
 
@@ -36,6 +40,7 @@ jobs:
     name: Integration (PG master @ test_saslprep)
     runs-on: ubuntu-latest
     env:
+      PG_SASLPREP_BUILD: "1"
       PG_PREFIX: ${{ github.workspace }}/pg-install
       # SHA of postgres master pinned to the latest commit touching
       # test_saslprep ("Fix issue with copy of input bytea"). The
@@ -49,6 +54,8 @@ jobs:
         with:
           elixir-version: "1.19"
           otp-version: "28"
+
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Cache postgres install
         id: pg-cache
@@ -92,7 +99,8 @@ jobs:
           path: |
             deps
             _build
-          key: mix-${{ runner.os }}-integration-${{ hashFiles('mix.lock') }}
+            native/pg_saslprep_nif/target
+          key: mix-${{ runner.os }}-integration-${{ hashFiles('mix.lock', 'native/pg_saslprep_nif/Cargo.toml') }}
 
       - run: mix deps.get
       - name: Run integration + property tests

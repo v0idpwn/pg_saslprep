@@ -113,7 +113,7 @@ defmodule PgSASLprep do
       mapped == [] -> {:error, :empty}
       not prohibit_ok?(mapped) -> {:error, :prohibited}
       not bidi_ok?(mapped) -> {:error, :prohibited}
-      true -> {:ok, mapped |> List.to_string() |> String.normalize(:nfkc)}
+      true -> {:ok, mapped |> List.to_string() |> PgSASLprep.NIF.nfkc()}
     end
   end
 

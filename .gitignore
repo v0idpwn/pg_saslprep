@@ -21,3 +21,7 @@ saslprep_ex-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Rust NIF build artifacts.
+/native/*/target/
+/priv/native/

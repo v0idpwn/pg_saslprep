@@ -147,17 +147,15 @@ defmodule PgSASLprepTest do
   end
 
   describe "regression" do
-    # NFKC of " " <> U+0CC0 must round-trip to itself. Found by property
-    # tests against postgres' test_saslprep extension.
-    #
-    # Triggers a bug in OTP < 28's `unicode_util` composition: when a
-    # grapheme cluster decomposes into [base, starter, starter] and the
-    # base does not pair with the next codepoint, the algorithm kept the
-    # original base instead of advancing to the unmatched starter, so the
-    # second pair (here U+0CBF + U+0CD5 → U+0CC0) was never tried. Fixed
-    # in OTP 28; this test fails on OTP 27 and earlier.
+    # NFKC vectors that previously diverged from postgres when using
+    # Erlang's `unicode_util`. We now delegate NFKC to the Rust
+    # `unicode-normalization` crate, so these are OTP-version-independent.
     test " ೀ" do
-      {:ok, <<0x20, 0xE0, 0xB3, 0x80>>} = PgSASLprep.saslprep(" ೀ")
+      {:ok, " ೀ"} = PgSASLprep.saslprep(" ೀ")
+    end
+
+    test "ᄓ걞" do
+      {:ok, "ᄓ걞"} = PgSASLprep.saslprep("ᄓ걞")
     end
   end
 end
