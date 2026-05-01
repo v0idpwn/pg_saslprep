@@ -145,4 +145,17 @@ defmodule PgSASLprepTest do
       end
     end
   end
+
+  describe "regression" do
+    # NFKC vectors that previously diverged from postgres when using
+    # Erlang's `unicode_util`. We now delegate NFKC to the Rust
+    # `unicode-normalization` crate, so these are OTP-version-independent.
+    test " ೀ" do
+      {:ok, " ೀ"} = PgSASLprep.saslprep(" ೀ")
+    end
+
+    test "ᄓ걞" do
+      {:ok, "ᄓ걞"} = PgSASLprep.saslprep("ᄓ걞")
+    end
+  end
 end

@@ -24,6 +24,8 @@ defmodule PgSASLprep.MixProject do
 
   defp deps do
     [
+      {:rustler, "~> 0.34", optional: true},
+      {:rustler_precompiled, "~> 0.8"},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:postgrex, "~> 0.17", only: :test},
       {:stream_data, "~> 1.1", only: :test}
@@ -39,7 +41,9 @@ defmodule PgSASLprep.MixProject do
       maintainers: ["Felipe Stival"],
       licenses: ["PostgreSQL"],
       links: %{"GitHub" => @source_url},
-      files: ~w(lib mix.exs README.md LICENSE)
+      files:
+        ~w(lib native/pg_saslprep_nif/src native/pg_saslprep_nif/Cargo.toml
+           checksum-*.exs mix.exs README.md LICENSE)
     ]
   end
 
